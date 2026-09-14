@@ -1,0 +1,671 @@
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+
+export interface AdminRecord {
+  id: number;
+  name: string;
+  email: string;
+  password_hash: string;
+  salt: string;
+  role: 'super_admin' | 'admin';
+  status: 'active' | 'inactive';
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PackageFeature {
+  id: number;
+  package_id: number;
+  feature: string;
+  sort_order: number;
+}
+
+export interface PackageRecord {
+  id: number;
+  name: string;
+  slug: string;
+  subtitle: string;
+  price: number;
+  currency: string;
+  billing_unit: string;
+  description: string;
+  popular: boolean;
+  sort_order: number;
+  status: 'active' | 'inactive';
+  features: PackageFeature[];
+}
+
+export interface ServiceRecord {
+  id: number;
+  slug: string;
+  title: string;
+  short_description: string;
+  description: string;
+  icon: string;
+  image: string | null;
+  sort_order: number;
+  status: 'active' | 'inactive';
+}
+
+export interface IndustryRecord {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  sort_order: number;
+  status: 'active' | 'inactive';
+}
+
+export interface FaqRecord {
+  id: number;
+  question: string;
+  answer: string;
+  sort_order: number;
+  status: 'active' | 'inactive';
+}
+
+export interface TestimonialRecord {
+  id: number;
+  customer_name: string;
+  company_name: string;
+  designation: string;
+  content: string;
+  rating: number;
+  image: string | null;
+  sort_order: number;
+  status: 'active' | 'inactive';
+}
+
+export interface QuoteRecord {
+  id: number;
+  full_name: string;
+  business_name: string;
+  phone: string;
+  email: string;
+  location?: string;
+  camera_count: number;
+  package_id?: number | null;
+  package_name?: string;
+  message?: string;
+  status: 'new' | 'contacted' | 'in_progress' | 'completed' | 'cancelled';
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactRecord {
+  id: number;
+  full_name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  status: 'new' | 'read' | 'replied' | 'archived';
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActivityLogRecord {
+  id: number;
+  admin_id: number | null;
+  admin_name?: string;
+  action: string;
+  entity: string;
+  entity_id: string | null;
+  details: string | null;
+  ip_address: string;
+  created_at: string;
+}
+
+export interface PaymentOrderRecord {
+  id: number;
+  transaction_id: string; // e.g. "TXN-STV-..." or Stripe PaymentIntent ID
+  invoice_number: string;  // e.g. "INV-2026-0001"
+  company_name: string;
+  contact_name: string;
+  email: string;
+  phone: string;
+  location?: string;
+  package_id?: number | null;
+  package_name: string;
+  package_slug: string;
+  hourly_rate: number;
+  hours_purchased: number;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  currency: string;
+  camera_count: number;
+  setup_date?: string;
+  special_instructions?: string;
+  payment_method: 'card' | 'stripe' | 'bank_transfer';
+  payment_intent_id?: string;
+  card_last4?: string;
+  card_brand?: string;
+  status: 'paid' | 'pending' | 'active' | 'cancelled' | 'refunded';
+  is_sandbox: boolean;
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseState {
+  admins: AdminRecord[];
+  packages: PackageRecord[];
+  services: ServiceRecord[];
+  industries: IndustryRecord[];
+  faqs: FaqRecord[];
+  testimonials: TestimonialRecord[];
+  quotes: QuoteRecord[];
+  contacts: ContactRecord[];
+  orders: PaymentOrderRecord[];
+  settings: Record<string, string>;
+  activity_logs: ActivityLogRecord[];
+  nextIds: {
+    admin: number;
+    package: number;
+    feature: number;
+    service: number;
+    industry: number;
+    faq: number;
+    testimonial: number;
+    quote: number;
+    contact: number;
+    order: number;
+    log: number;
+  };
+}
+
+// Secure password hashing
+export function hashPassword(password: string, salt?: string): { hash: string; salt: string } {
+  const effectiveSalt = salt || crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, effectiveSalt, 64).toString('hex');
+  return { hash, salt: effectiveSalt };
+}
+
+export function verifyPassword(password: string, hash: string, salt: string): boolean {
+  const calculated = crypto.scryptSync(password, salt, 64).toString('hex');
+  return crypto.timingSafeEqual(Buffer.from(calculated, 'hex'), Buffer.from(hash, 'hex'));
+}
+
+// Simple secure JWT implementation using HMAC-SHA256
+const JWT_SECRET = process.env.JWT_SECRET || 'sentrova_super_secure_jwt_secret_key_2026_x89f';
+
+export function signJwt(payload: object, expiresInSec: number = 86400 * 7): string {
+  const header = Buffer.from(JSON.stringify({ typ: 'JWT', alg: 'HS256' })).toString('base64url');
+  const exp = Math.floor(Date.now() / 1000) + expiresInSec;
+  const body = Buffer.from(JSON.stringify({ ...payload, exp, iat: Math.floor(Date.now() / 1000) })).toString('base64url');
+  const signature = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
+  return `${header}.${body}.${signature}`;
+}
+
+export function verifyJwt(token: string): any | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const [header, body, signature] = parts;
+    const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
+    if (signature !== expectedSig) return null;
+    const decoded = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+// Database initial state seeding
+function createInitialState(): DatabaseState {
+  const adminPass = hashPassword('Sentrova2026!');
+
+  return {
+    admins: [
+      {
+        id: 1,
+        name: 'Super Administrator',
+        email: 'admin@sentrova.co.uk',
+        password_hash: adminPass.hash,
+        salt: adminPass.salt,
+        role: 'super_admin',
+        status: 'active',
+        last_login_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ],
+    packages: [
+      {
+        id: 1,
+        name: 'ESSENTIAL',
+        slug: 'essential',
+        subtitle: 'Customer Theft Monitoring',
+        price: 1.99,
+        currency: '$',
+        billing_unit: '/HR',
+        description: 'Dedicated customer-facing surveillance to identify concealment and deter shoplifting in real-time.',
+        popular: false,
+        sort_order: 1,
+        status: 'active',
+        features: [
+          { id: 1, package_id: 1, feature: 'Store Theft Detection', sort_order: 1 },
+          { id: 2, package_id: 1, feature: 'Shoplifting Monitoring', sort_order: 2 },
+          { id: 3, package_id: 1, feature: 'Suspicious Customer Activity', sort_order: 3 },
+          { id: 4, package_id: 1, feature: 'Theft Incident Identification', sort_order: 4 },
+          { id: 5, package_id: 1, feature: 'High-Risk Behaviour Monitoring', sort_order: 5 },
+          { id: 6, package_id: 1, feature: 'Real-Time CCTV Monitoring', sort_order: 6 },
+          { id: 7, package_id: 1, feature: 'Instant Theft Alerts', sort_order: 7 },
+          { id: 8, package_id: 1, feature: 'Theft Activity Reporting', sort_order: 8 },
+        ],
+      },
+      {
+        id: 2,
+        name: 'GROWTH',
+        slug: 'growth',
+        subtitle: 'Customer + Staff Monitoring',
+        price: 2.99,
+        currency: '$',
+        billing_unit: '/HR',
+        description: 'Comprehensive sales-floor and cashier register audit surveillance to eliminate internal shrinkage.',
+        popular: true,
+        sort_order: 2,
+        status: 'active',
+        features: [
+          { id: 9, package_id: 2, feature: 'Full Staff Monitoring', sort_order: 1 },
+          { id: 10, package_id: 2, feature: 'Cashier Activity Monitoring', sort_order: 2 },
+          { id: 11, package_id: 2, feature: 'Staff Movement Monitoring', sort_order: 3 },
+          { id: 12, package_id: 2, feature: 'Suspicious Staff Behaviour', sort_order: 4 },
+          { id: 13, package_id: 2, feature: 'Unauthorized Staff Activity', sort_order: 5 },
+          { id: 14, package_id: 2, feature: 'Customer & Staff Interaction Monitoring', sort_order: 6 },
+          { id: 15, package_id: 2, feature: 'Unusual Activity Detection', sort_order: 7 },
+          { id: 16, package_id: 2, feature: 'Workplace Activity Monitoring', sort_order: 8 },
+          { id: 17, package_id: 2, feature: 'Incident Identification & Reporting', sort_order: 9 },
+        ],
+      },
+      {
+        id: 3,
+        name: 'ULTIMATE',
+        slug: 'ultimate',
+        subtitle: 'Complete Store Monitoring',
+        price: 5.99,
+        currency: '$',
+        billing_unit: '/HR',
+        description: '360° total facility security with nocturnal perimeter coverage, emergency voice-down deterrence, and daily reports.',
+        popular: false,
+        sort_order: 3,
+        status: 'active',
+        features: [
+          { id: 18, package_id: 3, feature: 'Store Activity Monitoring', sort_order: 1 },
+          { id: 19, package_id: 3, feature: 'Opening & Closing Activity', sort_order: 2 },
+          { id: 20, package_id: 3, feature: 'Unauthorized Access Monitoring', sort_order: 3 },
+          { id: 21, package_id: 3, feature: 'Restricted Area Activity', sort_order: 4 },
+          { id: 22, package_id: 3, feature: 'After-Hours Activity Monitoring', sort_order: 5 },
+          { id: 23, package_id: 3, feature: 'Customer & Staff Behaviour Monitoring', sort_order: 6 },
+          { id: 24, package_id: 3, feature: 'Unusual Incident Detection', sort_order: 7 },
+          { id: 25, package_id: 3, feature: 'Real-Time Incident Monitoring', sort_order: 8 },
+          { id: 26, package_id: 3, feature: 'Detailed Incident Reporting', sort_order: 9 },
+          { id: 27, package_id: 3, feature: 'Daily Monitoring Summary', sort_order: 10 },
+        ],
+      },
+    ],
+    services: [
+      {
+        id: 1,
+        slug: 'customer-theft',
+        title: 'Customer Theft Monitoring',
+        short_description: 'Active visual tracking of sales floor activity to identify concealment, tag tampering, and unpaid items.',
+        description: 'Our proactive operators monitor high-shrink merchandise aisles, fitting room peripheries, and blind spots to pinpoint theft as it occurs.',
+        icon: 'ShieldAlert',
+        image: null,
+        sort_order: 1,
+        status: 'active',
+      },
+      {
+        id: 2,
+        slug: 'shoplifting',
+        title: 'Shoplifting Monitoring',
+        short_description: 'Targeted surveillance over high-value goods, alcohol shelves, electronics, and cosmetics displays.',
+        description: 'Dedicated focus on premium merchandise zones to identify organized retail crime (ORC), bulk sweeping, and booster bag use before suspects exit premises.',
+        icon: 'Eye',
+        image: null,
+        sort_order: 2,
+        status: 'active',
+      },
+      {
+        id: 3,
+        slug: 'staff-monitoring',
+        title: 'Staff Monitoring',
+        short_description: 'Supervision of cash registers, returns desks, and stock storage to deter internal shrinkage.',
+        description: 'Rigorous till transaction oversight, sweethearting detection, manual discount verification, and stockroom loading dock supervision.',
+        icon: 'Users',
+        image: null,
+        sort_order: 3,
+        status: 'active',
+      },
+      {
+        id: 4,
+        slug: 'suspicious-behaviour',
+        title: 'Suspicious Behaviour Detection',
+        short_description: 'Early warning indicators for loitering, scouting, aggressive posture, or unusual dwell times.',
+        description: 'Experienced operators recognize pre-theft behavioral cues, giving your on-site security or management a critical 3-5 minute early warning advantage.',
+        icon: 'AlertTriangle',
+        image: null,
+        sort_order: 4,
+        status: 'active',
+      },
+      {
+        id: 5,
+        slug: 'unauthorized-access',
+        title: 'Unauthorized Access Monitoring',
+        short_description: 'Perimeter, loading bay, fire exit, and back-office surveillance against unauthorized entry.',
+        description: 'Real-time detection of perimeter breaches, propped fire exit doors, and restricted area trespassers backed by instant live 2-way audio voice-down broadcast.',
+        icon: 'Lock',
+        image: null,
+        sort_order: 5,
+        status: 'active',
+      },
+      {
+        id: 6,
+        slug: 'after-hours',
+        title: 'After-Hours Monitoring',
+        short_description: 'Vigilant nocturnal surveillance when your premises are locked, dark, and empty.',
+        description: 'Comprehensive night-watch protection with thermal verification, optical zoom tracking, and immediate emergency keyholder & police dispatch.',
+        icon: 'Moon',
+        image: null,
+        sort_order: 6,
+        status: 'active',
+      },
+      {
+        id: 7,
+        slug: 'real-time-incident',
+        title: 'Real-Time Incident Monitoring',
+        short_description: 'Live, dynamic operator intervention during active emergencies, disturbances, or safety hazards.',
+        description: 'Direct 24/7 operator intervention to guide emergency responders with real-time suspect descriptions and tactical location relays.',
+        icon: 'Radio',
+        image: null,
+        sort_order: 7,
+        status: 'active',
+      },
+      {
+        id: 8,
+        slug: 'incident-reporting',
+        title: 'Incident Reporting',
+        short_description: 'Structured, court-admissible dossiers complete with HD video clips, timestamps, and operator notes.',
+        description: 'Every verified incident is recorded with cryptographically hashed timestamps and police-ready evidentiary packs delivered in under 15 minutes.',
+        icon: 'FileText',
+        image: null,
+        sort_order: 8,
+        status: 'active',
+      },
+    ],
+    industries: [
+      { id: 1, name: 'Retail Stores', slug: 'retail-stores', description: 'High-shrink boutiques, fashion apparel, consumer electronics, and footwear chains.', icon: 'ShoppingBag', sort_order: 1, status: 'active' },
+      { id: 2, name: 'Supermarkets', slug: 'supermarkets', description: 'High-footfall grocery stores, produce markets, and liquor departments.', icon: 'Store', sort_order: 2, status: 'active' },
+      { id: 3, name: 'Convenience Stores', slug: 'convenience-stores', description: 'Corner shops and express food marts vulnerable to rapid snatch-and-grab theft.', icon: 'Clock', sort_order: 3, status: 'active' },
+      { id: 4, name: 'Warehouses', slug: 'warehouses', description: 'Large-format logistics depots, pallet bays, and distribution centers.', icon: 'Boxes', sort_order: 4, status: 'active' },
+      { id: 5, name: 'Offices', slug: 'offices', description: 'Corporate headquarters, shared co-working spaces, and IT infrastructure rooms.', icon: 'Building2', sort_order: 5, status: 'active' },
+      { id: 6, name: 'Restaurants', slug: 'restaurants', description: 'Bars, cafes, fine dining establishments, and quick-service restaurant points.', icon: 'UtensilsCrossed', sort_order: 6, status: 'active' },
+      { id: 7, name: 'Commercial Properties', slug: 'commercial-properties', description: 'Multi-tenant commercial business parks, trade counters, and showrooms.', icon: 'Building', sort_order: 7, status: 'active' },
+      { id: 8, name: 'Workshops', slug: 'workshops', description: 'Vehicle service bays, industrial fabrication yards, and tool storage facilities.', icon: 'Wrench', sort_order: 8, status: 'active' },
+      { id: 9, name: 'Construction Sites', slug: 'construction-sites', description: 'Plant equipment yards, raw material stores, and high-risk construction developments.', icon: 'HardHat', sort_order: 9, status: 'active' },
+    ],
+    faqs: [
+      {
+        id: 1,
+        question: 'Do I need to purchase new CCTV cameras or hardware to use Sentrova?',
+        answer: 'No. Sentrova connects directly to 99% of existing CCTV systems, including Hikvision, Dahua, Axis, Hanwha/Samsung, Uniview, Reolink, and any RTSP/ONVIF compatible NVR/DVR. We establish a secure encrypted tunnel without requiring costly camera replacements.',
+        sort_order: 1,
+        status: 'active',
+      },
+      {
+        id: 2,
+        question: 'How quickly does Sentrova alert our staff when suspicious activity is detected?',
+        answer: 'Our monitoring center operates on a strict sub-30-second escalation standard. When concealment or unauthorized activity is detected, our operator immediately contacts your on-duty floor manager via dedicated WhatsApp dispatch or phone call with precise details.',
+        sort_order: 2,
+        status: 'active',
+      },
+      {
+        id: 3,
+        question: 'Are there long-term lock-in contracts?',
+        answer: 'None whatsoever. Sentrova offers transparent, flexible pricing starting at $1.99 / active monitoring hour. You only pay for the scheduled monitoring hours you book, whether that is peak shopping hours, nights, or weekends.',
+        sort_order: 3,
+        status: 'active',
+      },
+      {
+        id: 4,
+        question: 'How does the two-way live voice deterrence work?',
+        answer: 'If your facility has network IP speakers or audio-enabled cameras, our operators can broadcast live voice-downs directly into the zone (e.g., "Attention: You are under live remote video surveillance. Please step away from the merchandise"). This stops over 94% of incidents without confrontation.',
+        sort_order: 4,
+        status: 'active',
+      },
+      {
+        id: 5,
+        question: 'Can you provide video evidence for police reports and insurance claims?',
+        answer: 'Yes. Every verified incident generates a court-admissible evidentiary dossier complete with multi-angle HD video exports, millisecond timestamps, operator chronology notes, and suspect descriptions within 15 minutes of occurrence.',
+        sort_order: 5,
+        status: 'active',
+      },
+    ],
+    testimonials: [
+      {
+        id: 1,
+        customer_name: 'Marcus Vance',
+        company_name: 'Vance Superstores Ltd',
+        designation: 'Managing Director',
+        content: 'Within the first 3 weeks of connecting our 14 stores to Sentrova, inventory shrinkage dropped by 78%. Their operators intervened during 6 active shoplifting attempts before merchandise could leave the doorway.',
+        rating: 5,
+        image: null,
+        sort_order: 1,
+        status: 'active',
+      },
+      {
+        id: 2,
+        customer_name: 'Helena Berg',
+        company_name: 'Nordic Apparel & Retail',
+        designation: 'Operations Director',
+        content: 'The $2.99/hr Growth package paid for itself in days. Having dedicated eyes on till transactions and rear stockroom entries eliminated sweethearting and unauthorized access completely.',
+        rating: 5,
+        image: null,
+        sort_order: 2,
+        status: 'active',
+      },
+      {
+        id: 3,
+        customer_name: 'David O\'Connor',
+        company_name: 'Apex Logistics & Freight',
+        designation: 'Head of Facility Security',
+        content: 'We use the Ultimate package for overnight yard monitoring. When two trespassers cut our perimeter wire at 2:30 AM, Sentrova used the live audio voice-down and police were on site in 8 minutes. Outstanding professionalism.',
+        rating: 5,
+        image: null,
+        sort_order: 3,
+        status: 'active',
+      }
+    ],
+    quotes: [
+      {
+        id: 1,
+        full_name: 'James Mitchell',
+        business_name: 'Metro Retail Mart',
+        phone: '+44 7700 900123',
+        email: 'james@metroretail.co.uk',
+        location: 'Camden, London',
+        camera_count: 12,
+        package_id: 2,
+        package_name: 'GROWTH ($2.99 / HR)',
+        message: 'Looking for monitoring during evening shifts between 4 PM and 10 PM.',
+        status: 'new',
+        admin_notes: 'Initial inquiry via web portal. Follow up on Monday.',
+        created_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+        updated_at: new Date(Date.now() - 3600000 * 4).toISOString(),
+      },
+      {
+        id: 2,
+        full_name: 'Sophia Patel',
+        business_name: 'Premier Hardware Stores',
+        phone: '+44 7700 900456',
+        email: 'sophia@premierhardware.co.uk',
+        location: 'Birmingham',
+        camera_count: 24,
+        package_id: 3,
+        package_name: 'ULTIMATE ($5.99 / HR)',
+        message: 'Interested in full overnight facility perimeter coverage.',
+        status: 'in_progress',
+        admin_notes: 'Audit call completed. Sending technical bridge test instructions.',
+        created_at: new Date(Date.now() - 86400000 * 1.5).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 1.5).toISOString(),
+      },
+      {
+        id: 3,
+        full_name: 'Liam Davies',
+        business_name: 'Davies Convenience Store',
+        phone: '+44 7700 900789',
+        email: 'liam@daviesmart.co.uk',
+        location: 'Manchester',
+        camera_count: 8,
+        package_id: 1,
+        package_name: 'ESSENTIAL ($1.99 / HR)',
+        message: 'Need deterrence during peak lunchtime and after-school hours.',
+        status: 'completed',
+        admin_notes: 'Active client. Monitoring setup verified on Hikvision DVR.',
+        created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+      },
+    ],
+    contacts: [
+      {
+        id: 1,
+        full_name: 'Arthur Pendelton',
+        email: 'arthur@pendelton-estates.co.uk',
+        phone: '+44 7700 900333',
+        subject: 'Compatibility with Axis PTZ network cameras',
+        message: 'We operate 18 Axis PTZ domes across our commercial estate. Do you support dynamic PTZ preset patrol monitoring?',
+        status: 'new',
+        admin_notes: '',
+        created_at: new Date(Date.now() - 3600000 * 6).toISOString(),
+        updated_at: new Date(Date.now() - 3600000 * 6).toISOString(),
+      },
+    ],
+    settings: {
+      company_name: 'SENTROVA Surveillance',
+      phone: '+44 7742 476163',
+      whatsapp: '+44 7448 871603',
+      email: 'monitoring@sentrova.co.uk',
+      address: '71-75 Shelton Street, Covent Garden, London, WC2H 9JQ, United Kingdom',
+      hero_title: 'Real-Time Remote CCTV Monitoring for UK Retail & Business',
+      hero_description: 'Human-verified active surveillance starting at $1.99 / hour. We deter shoplifting, till theft, and unauthorized intrusion before damage occurs.',
+      meta_title: 'SENTROVA | Active 24/7 Remote CCTV Monitoring & Retail Deterrence',
+      meta_description: 'Professional remote CCTV monitoring from $1.99/hr. Live operator surveillance, instant theft deterrence, and zero lock-in contracts.',
+      whatsapp_message: 'Hello SENTROVA, I would like to know more about your CCTV monitoring services.',
+      facebook_url: 'https://facebook.com/sentrova',
+      instagram_url: 'https://instagram.com/sentrova',
+      linkedin_url: 'https://linkedin.com/company/sentrova',
+    },
+    activity_logs: [
+      {
+        id: 1,
+        admin_id: 1,
+        admin_name: 'Super Administrator',
+        action: 'system_init',
+        entity: 'system',
+        entity_id: '1',
+        details: 'Sentrova Production Database Initialized',
+        ip_address: '127.0.0.1',
+        created_at: new Date().toISOString(),
+      },
+    ],
+    orders: [
+      {
+        id: 1,
+        transaction_id: 'TXN-STV-2026-98124',
+        invoice_number: 'INV-STV-2026-0001',
+        company_name: 'Vance Superstores Ltd',
+        contact_name: 'Marcus Vance',
+        email: 'm.vance@vanceretail.co.uk',
+        phone: '+44 7742 476163',
+        location: 'Covent Garden, London',
+        package_id: 2,
+        package_name: 'GROWTH ($2.99 /HR)',
+        package_slug: 'growth',
+        hourly_rate: 2.99,
+        hours_purchased: 160,
+        subtotal: 478.40,
+        tax_amount: 0.00,
+        total_amount: 478.40,
+        currency: 'USD',
+        camera_count: 14,
+        setup_date: '2026-09-08',
+        special_instructions: 'Supermarket customer area & cashier registers overnight watch.',
+        payment_method: 'card',
+        card_last4: '4242',
+        card_brand: 'visa',
+        status: 'paid',
+        is_sandbox: true,
+        admin_notes: 'Initial monthly retainer confirmed. Onboarding call scheduled.',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ],
+    nextIds: {
+      admin: 2,
+      package: 4,
+      feature: 28,
+      service: 9,
+      industry: 10,
+      faq: 6,
+      testimonial: 4,
+      quote: 4,
+      contact: 2,
+      order: 2,
+      log: 2,
+    },
+  };
+}
+
+class JsonDatabase {
+  private filePath: string;
+  private state: DatabaseState;
+
+  constructor() {
+    const dir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    this.filePath = path.join(dir, 'db.json');
+
+    if (fs.existsSync(this.filePath)) {
+      try {
+        const raw = fs.readFileSync(this.filePath, 'utf8');
+        this.state = JSON.parse(raw);
+        if (!this.state.orders) {
+          this.state.orders = [];
+        }
+        if (!this.state.nextIds.order) {
+          this.state.nextIds.order = (this.state.orders.length || 0) + 1;
+        }
+      } catch {
+        this.state = createInitialState();
+        this.save();
+      }
+    } else {
+      this.state = createInitialState();
+      this.save();
+    }
+  }
+
+  public save(): void {
+    try {
+      fs.writeFileSync(this.filePath, JSON.stringify(this.state, null, 2), 'utf8');
+    } catch (e) {
+      console.error('Error writing database to disk:', e);
+    }
+  }
+
+  public getState(): DatabaseState {
+    return this.state;
+  }
+}
+
+export const db = new JsonDatabase();

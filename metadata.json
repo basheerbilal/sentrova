@@ -1,0 +1,6 @@
+{
+  "name": "SENTROVA",
+  "description": "Professional 24/7 CCTV monitoring and remote video surveillance for UK and commercial businesses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

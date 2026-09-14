@@ -1,0 +1,410 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body, #root {
+    background-color: #060E1E;
+    color: #F1F5F9;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  /* Sky Blue & Dark Blue Blended Glassmorphism Surfaces */
+  .glass-surface {
+    background: rgba(10, 22, 46, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  }
+
+  .glass-surface-elevated {
+    background: rgba(12, 28, 60, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 20px 50px -8px rgba(0, 210, 255, 0.2), inset 0 1px 2px rgba(255, 255, 255, 0.18);
+  }
+
+  .glass-surface-subtle {
+    background: rgba(8, 18, 38, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .glass-card-hover {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+  }
+  .glass-card-hover:hover {
+    transform: translateY(-6px);
+    border-color: rgba(0, 210, 255, 0.6);
+    box-shadow: 0 20px 50px -8px rgba(0, 210, 255, 0.25), 0 0 20px rgba(0, 210, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-pill {
+    background: rgba(14, 30, 62, 0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    color: #E2E8F0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Ultra-Realistic Cyber Glass Navbar */
+  .glass-navbar {
+    background: linear-gradient(135deg, rgba(6, 14, 30, 0.82) 0%, rgba(10, 24, 52, 0.72) 50%, rgba(6, 14, 30, 0.82) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 2px 0 rgba(0, 210, 255, 0.1),
+      0 16px 45px -6px rgba(0, 0, 0, 0.6),
+      0 0 25px rgba(0, 210, 255, 0.08);
+  }
+
+  .glass-navbar-scrolled {
+    background: linear-gradient(135deg, rgba(6, 14, 30, 0.94) 0%, rgba(10, 26, 56, 0.90) 50%, rgba(6, 14, 30, 0.94) 100%);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border: 1px solid rgba(56, 189, 248, 0.38);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid rgba(0, 210, 255, 0.4);
+    box-shadow: 
+      inset 0 1px 2px 0 rgba(255, 255, 255, 0.25),
+      inset 0 -1px 2px 0 rgba(0, 210, 255, 0.15),
+      0 20px 55px -8px rgba(0, 0, 0, 0.8),
+      0 0 30px rgba(0, 210, 255, 0.14);
+  }
+
+  /* Specular Chamfer Light Reflection */
+  .glass-specular-edge {
+    position: absolute;
+    top: 0;
+    left: 8%;
+    right: 8%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 210, 255, 0.8) 25%, rgba(255, 255, 255, 0.95) 50%, rgba(0, 210, 255, 0.8) 75%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* Glass Nav Item Interactive Highlight */
+  .glass-nav-item {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-nav-item:hover {
+    background: rgba(56, 189, 248, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 2px 12px rgba(0, 210, 255, 0.15);
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+
+  .glass-pill-blue {
+    background: rgba(0, 210, 255, 0.12);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 210, 255, 0.38);
+    color: #38BDF8;
+    box-shadow: 0 0 16px rgba(0, 210, 255, 0.15);
+  }
+
+  .glass-btn-secondary {
+    background: rgba(12, 26, 54, 0.7);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s ease;
+  }
+  .glass-btn-secondary:hover {
+    background: rgba(20, 45, 90, 0.85);
+    border-color: #00D2FF;
+    color: #FFFFFF;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 210, 255, 0.25), 0 0 15px rgba(0, 210, 255, 0.2);
+  }
+
+  /* Sky Blue & Dark Blue Ambient Gradients & Mesh */
+  .bg-glass-ambient {
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(0, 210, 255, 0.12) 0%, transparent 50%),
+      radial-gradient(circle at 85% 65%, rgba(8, 123, 255, 0.15) 0%, transparent 55%),
+      radial-gradient(circle at 50% 50%, rgba(6, 14, 30, 0.95) 0%, #060E1E 100%);
+  }
+
+  .bg-subtle-mesh {
+    background-image: radial-gradient(rgba(56, 189, 248, 0.15) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  /* Sentrova Logo-Matched Sky Blue & Dark Blue Cyber Gradients */
+  .bg-sentrova-gradient {
+    background: linear-gradient(135deg, #0756C9 0%, #087BFF 45%, #00D2FF 100%);
+  }
+  
+  .bg-sentrova-gradient-hover:hover {
+    background: linear-gradient(135deg, #0546AA 0%, #006CE6 45%, #00BEE8 100%);
+  }
+
+  .text-sentrova-gradient {
+    background: linear-gradient(135deg, #FFFFFF 0%, #38BDF8 50%, #00D2FF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .text-cyber-glow {
+    text-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+  }
+
+  .glow-cyan-subtle {
+    box-shadow: 0 4px 20px rgba(0, 210, 255, 0.3), 0 0 15px rgba(8, 123, 255, 0.4);
+  }
+
+  .glow-cyan-hover:hover {
+    box-shadow: 0 8px 32px rgba(0, 210, 255, 0.45), 0 0 20px rgba(0, 210, 255, 0.35);
+  }
+
+  /* Tactile Tap & Active Press States */
+  .tap-press {
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.12s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tap-press:active {
+    transform: scale(0.96) !important;
+  }
+
+  .tap-target {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@keyframes tap-ripple-kf {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.9;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3.2);
+    opacity: 0;
+  }
+}
+
+.animate-tap-ripple {
+  animation: tap-ripple-kf 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(16px)) {
+  .glass-surface,
+  .glass-surface-elevated,
+  .glass-surface-subtle,
+  .glass-pill,
+  .glass-btn-secondary {
+    background-color: #0A162D !important;
+  }
+}
+
+/* 3D Card Flip Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+/* Infinite Marquee Ticker Utilities */
+@keyframes marquee-scroll-left {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-scroll-right {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.marquee-track-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-left 32s linear infinite;
+  will-change: transform;
+}
+
+.marquee-track-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-right 32s linear infinite;
+  will-change: transform;
+}
+
+.marquee-container:hover .marquee-track-left,
+.marquee-container:hover .marquee-track-right,
+.marquee-track-left:hover,
+.marquee-track-right:hover {
+  animation-play-state: paused !important;
+}
+
+/* ========================================================================= */
+/* SENTROVA ADMIN DARK BLUE SECURITY THEME (MATCHES HOME PAGE)             */
+/* ========================================================================= */
+.admin-theme {
+  background-color: #060E1E !important;
+  color: #F1F5F9 !important;
+}
+
+/* Admin Card Surfaces & Containers */
+.admin-theme .bg-white {
+  background-color: #0A1B38 !important;
+  border-color: rgba(56, 189, 248, 0.22) !important;
+  color: #F1F5F9 !important;
+}
+
+/* Admin Subtle Backgrounds & Table Headers */
+.admin-theme .bg-\[\#F5F9FF\],
+.admin-theme .bg-slate-50,
+.admin-theme .bg-blue-50\/40,
+.admin-theme .bg-blue-50 {
+  background-color: #0B2147 !important;
+  border-color: rgba(56, 189, 248, 0.25) !important;
+  color: #E2E8F0 !important;
+}
+
+/* Border Overrides */
+.admin-theme .border-\[\#DDE7F5\],
+.admin-theme .border-slate-200,
+.admin-theme .border-slate-100 {
+  border-color: rgba(56, 189, 248, 0.2) !important;
+}
+
+.admin-theme .divide-\[\#DDE7F5\]\/60 > * + *,
+.admin-theme .divide-slate-200 > * + *,
+.admin-theme .divide-slate-100 > * + * {
+  border-color: rgba(56, 189, 248, 0.15) !important;
+}
+
+/* Typography & Headings */
+.admin-theme .text-\[\#0B1220\],
+.admin-theme .text-slate-900,
+.admin-theme .text-slate-800 {
+  color: #FFFFFF !important;
+}
+
+.admin-theme .text-\[\#536176\],
+.admin-theme .text-slate-600,
+.admin-theme .text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+/* Form Controls (Inputs, Selects, Textareas) */
+.admin-theme input:not([type="checkbox"]):not([type="radio"]),
+.admin-theme select,
+.admin-theme textarea {
+  background-color: #0B2147 !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: #FFFFFF !important;
+}
+
+.admin-theme input:focus,
+.admin-theme select:focus,
+.admin-theme textarea:focus {
+  border-color: #00D2FF !important;
+  box-shadow: 0 0 0 2px rgba(0, 210, 255, 0.25) !important;
+  outline: none !important;
+}
+
+.admin-theme input::placeholder,
+.admin-theme textarea::placeholder {
+  color: #64748B !important;
+}
+
+.admin-theme select option {
+  background-color: #0B2147 !important;
+  color: #FFFFFF !important;
+}
+
+/* Table Enhancements */
+.admin-theme thead th {
+  background-color: #0E244D !important;
+  color: #38BDF8 !important;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.25) !important;
+}
+
+.admin-theme tbody tr:hover {
+  background-color: rgba(56, 189, 248, 0.08) !important;
+}
+
+/* Badges Cyber Contrast Overrides */
+.admin-theme .bg-blue-100 {
+  background-color: rgba(8, 123, 255, 0.25) !important;
+  color: #38BDF8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
+.admin-theme .bg-emerald-100,
+.admin-theme .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  color: #34D399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+.admin-theme .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.25) !important;
+  color: #C084FC !important;
+  border: 1px solid rgba(168, 85, 247, 0.35) !important;
+}
+
+.admin-theme .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.25) !important;
+  color: #FBBF24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
+.admin-theme .bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+  color: #F87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
+.admin-theme .bg-slate-100 {
+  background-color: rgba(100, 116, 139, 0.25) !important;
+  color: #CBD5E1 !important;
+  border: 1px solid rgba(100, 116, 139, 0.35) !important;
+}
+
+
+
+
